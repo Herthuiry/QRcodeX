@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>QRcodeX - 简洁的二维码生成工具</title>
+        <link href="https://cdn.jsdelivr.net/npm/harmonyos-sans@1.0.0/dist/HarmonyOS_Sans_SC.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                padding-top: max(60px, 8vh);
+                min-height: 100vh;
+                color: #FFFFFF;
+                background: #FFFFFF;
+                font-family: 'HarmonyOS Sans SC', sans-serif;
+            }
+            header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                background-color: #FFFFFF;
+                color: #000000;
+                padding: max(12px, 2vh) max(16px, 4vw);
+                font-size: clamp(18px, 5vw, 24px);
+                font-weight: bold;
+                z-index: 999;
+                background: rgba(255, 255, 255, 0.3);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                display: flex;
+                justify-content: flex-start;
+                align-items: center;
+                border: 1px solid rgba(255, 255, 255, 0.4);
+                gap: max(12px, 2vw);
+            }
+            .header-right-group {
+                display: flex;
+                align-items: center;
+                margin-left: auto;
+                gap: max(12px, 2vw);
+                color: #000000;
+            }
+            .container {
+                opacity: 0;
+                animation: globalFadeIn 1s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+            }
+            @keyframes globalFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .vertical-slider {
+                padding: 0 max(16px, 4vw);
+                scroll-snap-type: y proximity;
+                transition: opacity 0.3s ease;
+            }
+            .card {
+                background: #f9f9f9;
+                border-radius: 25px;
+                padding: max(24px, 4vw);
+                margin: max(16px, 3vw) 0;
+                scroll-snap-align: start;
+            }
+            h2 {
+                margin-bottom: 8px;
+                font-size: clamp(20px, 4vw, 26px);
+                color: #1a1a1a;
+            }
+            h3 {
+                margin: 16px 0 4px;
+                font-size: clamp(18px, 4vw, 24px);
+                color: #616161;
+            }
+            h4 {
+                margin: 14px 0 4px;
+                font-size: clamp(16px, 4vw, 24px);
+                color: #616161;
+            }
+            p,span {
+                line-height: 1.6;
+                color: #616161;
+            }
+            .card .select-container{
+                position: relative;
+                display: block;
+                margin-bottom: 10px;
+            }
+            .card .select-container::after {
+                content: "▼";
+                position: absolute;
+                top: 50%;
+                left: 200px;
+                transform: translateY(-50%);
+                color: #616161;
+                font-size: 12px;
+                pointer-events: none;
+            }
+            .card .select-container select{
+                appearance: none;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                padding: 8px 35px 8px 15px;
+                border: none;
+                border-radius: 25px;
+                background-color: #eae9e9;
+                color: #616161;
+                font-size: 14px;
+                cursor: pointer;
+                outline: none;
+                width: 225px;      
+            }
+            .card textarea{
+                background-color: #eae9e9;
+                border-radius: 25px;
+                border: none;
+                padding: 12px 16px;
+                font-size: 14px;
+                color: #616161;
+                outline-color:#616161 ;
+                resize: none;
+                width: 100%;
+                height: 100px;
+            }
+            .hide{
+                display: none;
+            }
+            .normal-input input{
+                padding: 8px 15px;
+                border: none;
+                border-radius: 25px;
+                margin: 8px 0;
+                width: 200px;
+                outline: none;
+                color: #616161;
+                display: block;
+                width: 100%;
+                background-color: #FFFFFF;
+            }
+            .color-input input{
+                padding: 8px 8px;
+                border: none;
+                border-radius: 25px;
+                margin: 8px 0;
+                width: 50px;
+                height: 50px;
+                outline: none;
+                color: #eae9e9;
+                display: block;
+                display: inline-block;
+            }
+            button {
+                display: inline-block;
+                border-radius: 25px;
+                padding: 8px 16px;
+                background-color: #eae9e9;
+                color: #616161;
+                text-decoration: none;
+                margin-top: 10px;
+                width: 100px;
+            }
+            #qrcode{
+                margin: 15px 0;
+                border-radius: 25px;
+            }
+            @keyframes spin-all {
+                0% { transform: scaleX(1); }
+                50% { transform: scaleX(-1); }
+                100% { transform: scaleX(1); }
+            }
+            .container.spin-active {
+                transform-origin: center center;
+                animation: spin-all 5s ease-in-out;
+            }
+            @media (prefers-color-scheme: dark) {
+                body {
+                    background: #000000;
+                }
+                header {
+                    background: rgba(0, 0, 0, 0.3);
+                    border: 1px solid rgba(0, 0, 0, 0.4);
+                    color: #FFFFFF;
+                }
+                .header-right-group {
+                    color: #FFFFFF;
+                }
+                .card {
+                    background: #1a1a1b;
+                }
+                h2 {
+                    color: #FFFFFF;
+                }
+                h3,h4,p,span {
+                    color: #DDDDDD;
+                }
+                .card .select-container select{
+                    background-color: #333333;
+                    color: #a8a8a8;
+                }
+                .card textarea{
+                    background-color: #333333;
+                    color: #a8a8a8;
+                    outline-color:#a8a8a8;
+                }
+                .normal-input input{
+                    color: #a8a8a8;
+                    background-color: #000000;
+                }
+                .color-input {
+                    color: #a8a8a8;
+                }
+                button {
+                    background-color: #333333;
+                    color: #a8a8a8;
+                }
+            }
+        </style>
+        <script defer>
+            let qrCodeInstance = null;
+            const qrcodeshow = document.getElementById("qrcodeshow");
+            const verticalSlider = document.getElementById("VerticalSlider");
+            const emoticon1 = document.getElementById("emoticon1");
+            const emoticon2 = document.getElementById("emoticon2");
+            const headerText = document.getElementById("headerText");
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const LevelMap = {
+                'L': QRCode.CorrectLevel.L,
+                'M': QRCode.CorrectLevel.M,
+                'Q': QRCode.CorrectLevel.Q,
+                'H': QRCode.CorrectLevel.H
+            };
+            window.onload = function() {
+                const licenseCheck = document.querySelector('.license-check');
+                const hasAgreed = localStorage.getItem('hasAgreedLicense') === 'true';
+                if (hasAgreed) {
+                    licenseCheck.style.display = 'none';
+                }
+            };
+            function getByteLength(str) {
+                let count = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const code = str.charCodeAt(i);
+                    if (code <= 127) count += 1;
+                    else if (code <= 2047) count += 2;
+                    else count += 3;
+                }
+                return count;
+            }
+            function showInput(type) {
+                const textInput = document.getElementById('textinput');
+                const wlanInput = document.getElementById('wlaninput');
+                if (type === 'text') {
+                    textInput.classList.remove('hide');
+                    wlanInput.classList.add('hide');
+                } else if (type === 'wlan') {
+                    textInput.classList.add('hide');
+                    wlanInput.classList.remove('hide');
+                }
+            };
+            function GenerateQRcode() {
+                const agreeBox = document.querySelector('.license-check');
+                const agree = document.getElementById('agreeLicense').checked;
+                const hasAgreed = localStorage.getItem('hasAgreedLicense') === 'true';
+                if (hasAgreed) {
+                    createQRcode();
+                    return;
+                }
+                if (!agree) {
+                    alert('请先勾选并同意开源协议哦～');
+                    return;
+                }
+                localStorage.setItem('hasAgreedLicense', 'true');
+                agreeBox.style.display = 'none';
+                createQRcode();
+            };
+            function showQRcodeLicense() {
+                alert(`QRcodeX 开源协议（MIT)\nCopyright (c) 2026 QRcodeX\n本工具免费开源，可自由使用/修改/分发，请勿用于非法用途。\n第三方依赖\n qrcodejs (MIT协议)\n | Copyright (c) 2018 davidshimjs
+                `);
+            };
+            function createQRcode() {
+                const type = document.getElementById('type').value;
+                const qrcodeContainer = document.getElementById('qrcode');
+                let qrContent = '';
+                if (qrCodeInstance) {
+                    qrCodeInstance.clear();
+                    qrcodeContainer.innerHTML = '';
+                };
+                const colorLight = document.getElementById('colorLight').value || '#FFFFFF';
+                const colorDark = document.getElementById('colorDark').value || '#000000';
+                const LastOperation = document.getElementById('LastOperation');
+                const Levelstr = document.getElementById('level').value;
+                let Level = LevelMap[Levelstr];
+                const sizeText = document.getElementById('sizeText').innerText;
+                if (Level === undefined) {
+                    console.warn('Invalid level:', Levelstr, 'fallback to M');
+                    Level = QRCode.CorrectLevel.M;
+                };
+                if (type === 'text') {
+                    const content = document.getElementById('TextContent').value.trim();
+                    if (!content) {
+                        alert('请输入文本或网站地址！');
+                        return;
+                    }
+                    qrContent = content;
+                    LastOperation.innerText = `上次操作：\n文本或网站 → ${qrContent}\n容错等级：${Levelstr}\n大小：${sizeText}`;
+                } else if (type === 'wlan') {
+                    const name = document.getElementById('wlanName').value.trim();
+                    const pwd = document.getElementById('wlanPwd').value.trim() || '';
+                    const encryptType = document.getElementById('wlan-type').value;
+                    if (name === '') {
+                        alert('请输入WLAN名称！');
+                        return;
+                    }     
+                    if (pwd !== '' && pwd.length < 5 && encryptType == 'WEP' ) {
+                        alert('WLAN密码不符合要求，至少大于等于5位！（对于WEP类型）');
+                        return;
+                    }
+                    if (pwd !== '' && pwd.length < 8 && encryptType !== 'Open' ) {
+                        alert('WLAN密码不符合要求，至少大于等于8位！');
+                        return;
+                    }
+                    if (pwd !== '' && encryptType == 'Open'){
+                        alert('WLAN密码不符合要求，至少大于等于5位！');
+                        return;
+                    }
+                    if (pwd == '' && encryptType !== 'Open'){
+                        alert('除Open外，其他加密方式密码不能留空，请切换！');
+                        return;
+                    }
+                    if (pwd !== '' && encryptType == 'Open'){
+                        alert('在使用Open加密类型时，无法使用密码');
+                        return;
+                    }
+                    qrContent = `WIFI:S:${name};T:${encryptType};P:${pwd};;`;
+                    LastOperation.innerText = `上次操作：\nWLAN → ${name}\n容错等级：${Levelstr}\n大小：${sizeText}`;
+                }
+                let maxBytes;
+                switch(Levelstr) {
+                    case 'L': maxBytes = 1024; break;
+                    case 'M': maxBytes = 800; break;
+                    case 'Q': maxBytes = 560; break;
+                    case 'H': maxBytes = 420; break;
+                    default: maxBytes = 800;
+                }
+                const bytes = getByteLength(qrContent);
+                if (bytes > maxBytes) {
+                    alert(`当前容错【${Levelstr}】，最多支持 ${maxBytes} 字节\n当前已用：${bytes} 字节`);
+                    return;
+                }
+                const qrSize = document.getElementById('qrSize').value;
+                qrCodeInstance = new QRCode(qrcodeContainer, {
+                    text: qrContent,
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark: colorDark,
+                    colorLight: colorLight,
+                    correctLevel: Level,
+                    useSVG: false,
+                    useCanvas: true
+                });
+                showQRcodeContainer();
+            };
+            function showQRcodeContainer() {
+                const tips = document.getElementById("tips");
+                const QRcodeContainer = document.getElementById('qrcodeshow');
+                QRcodeContainer.classList.remove('hide');
+                tips.classList.add('hide');
+                qrcodeshow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+            function downloadQRcode() {
+                const qrImg = document.querySelector('#qrcode img');
+                const a = document.createElement('a');
+                a.href = qrImg.src;
+                a.download = `qrcode-${new Date().getTime()}.png`;
+                a.click();
+            };
+            function about() {
+                alert('QRcodeX\n版本：26.2.1\n开源协议(MIT)\nCopyright (c) 2026 QRcodeX\n\n第三方依赖\n• qrcodejs (MIT) | Copyright (c) 2018 davidshimjs\n\n字体资源\n• HarmonyOS Sans | Copyright (c) 华为终端有限公司\n  遵循《HarmonyOS Sans 字体免费商用授权协议》');
+            };
+            function changelog() {
+                alert('更新日志\n\n-26.2.1:修复了一些隐性，但十分致命的问题，修复了部分DOM元素获取时机错误导致的功能失效问题，增加了大小调整，范围在100至300，将图片改为Canvas格式，电脑下载更高清，手机端嘛，还是一样截屏（今天喝了奶茶，太好喝了😋）\n\n-26.2：大面积修复代码，新增了跟随系统的深色模式，并增加了一点点小彩蛋（对了，还有个人主页跳转链接还没说呢，今天也是下载到了Android Studio，后面将会用这玩意来进行打包，可能会出现签名不一致的情况）\n\n-26.1：更名为“QRcodeX”，已完成第二次重置\n\n（第二次重置）\n\26.0 snapshot-2:\n修复了无法生成二维码的bug（其实是我忘记用网络权限了）\n-26.0 snapshot-1:\n项目重置后的第一个版本，更换了版本命名规则（第一次重置的项目）\n\n（第一次重置）\n\n-1.1.2：\n1，修复了生成网络二维码取消后出现UI冲突的现象\n2，修改了软件图标\n3，主页图片更为曼波\n4，有彩蛋\n\n-1.1.1：增加了生成二维码后的退出按钮\n\n-1.1.1：更新了网络二维码生成，二维码自定义选项\n\n-1.0.0：二维码生成器诞生了，体积小巧无广告（虽然包体有10MB）');
+            };
+            function emoticon_change(emoticon,text,beforetext){
+                if(emoticon.innerText === beforetext){
+                    emoticon.innerText = text;
+                }else{
+                    emoticon.innerText = beforetext;
+                };
+            };
+            function rotate() {
+                const container = document.getElementById("container");
+                container.classList.add("spin-active");
+                setTimeout(() => {
+                    container.classList.remove("spin-active");
+                }, 1000);
+            };
+            document.addEventListener('DOMContentLoaded', function() {
+                const qrSize = document.getElementById('qrSize');
+                const sizeText = document.getElementById('sizeText');
+                if (qrSize && sizeText) {
+                    qrSize.oninput = function(){
+                        sizeText.innerText = this.value + '×' + this.value;
+                    }
+                }
+            });
+            if(month == 11 && day == 30){
+                alert('今天是作者的生日哦');
+            }
+        </script>
+    </head>
+    <body>
+        <div class="container" id="container">
+            <header>
+                <span id="headerText" onclick="emoticon_change(this,'(=ﾟДﾟ=)','QRcodeX')" style="cursor:pointer;color:#000000;font-size: clamp(18px, 5vw, 24px);">QRcodeX</span>
+                <div class="header-right-group">
+                    <span onclick="about()" style="font-size:15px; cursor:pointer;">i</span>
+                    <span onclick="changelog()" style="font-size:15px; cursor:pointer;">≡</span>
+                    <span onclick="window.location.href = 'https://herthuiry.github.io/My-Warehouse/';">⌂</span>
+                </div>
+            </header>
+            <div class="vertical-slider" id="VerticalSlider">
+                <noscript>
+                    <div class="card">
+                        <h2>温馨提示</h2>
+                        <p>您的浏览器并不支持JavaScript，我们生成二维码的技术需依靠JavaScript<br>（仅需换个浏览器即可）</p>
+                        <p> ꒦ິ^꒦ິ</p>
+                    </div>
+                </noscript>
+                <div class="card hide">
+                    <h2>版本提示</h2>
+                    <p>该版本为快照版本，可以与普通版本共存，该版本相比普通版更新了部分特性，但是代价是会比普通版多出一些bug<br>祝你好运</p>
+                    <p id="emoticon1" onclick="emoticon_change(this,'(=ﾟ∀ﾟ=)','∑(;°Д°)')" style="cursor:pointer;">∑(;°Д°)</p>
+                </div>
+                <div class="card">
+                    <h2>欢迎</h2>
+                    <p>欢迎使用QRcodeX</p>
+                    <p id="emoticon2" onclick="emoticon_change(this,' (◍＞◡＜◍) HI!','（＾∨＾）HELLO～')" style="cursor:pointer;">（＾∨＾）HELLO～</p>
+                </div>
+                <div class="card">
+                    <h2 onclick="rotate();">生成</h2>
+                    <h3>通过一些设置来生成QRcode</h3>
+                    <h4>QRcode类型</h4>
+                    <div class="select-container">
+                        <select id="type" onchange="showInput(this.value)">
+                            <option value="text">文本或网站</option>
+                            <option value="wlan">WLAN</option>
+                        </select>
+                    </div>
+                    <div id="textinput">
+                        <textarea type="text" id="TextContent" placeholder="enter QRcode content……"></textarea>
+                    </div>
+                    <div id="wlaninput" class="hide">
+                        <div class="normal-input">
+                            <input type="text" id="wlanName" placeholder="enter WLAN name…… "required></input>
+                            <input type="password" id="wlanPwd" placeholder="enter WLAN pwd……"></input>
+                        </div>
+                        <h4>加密类型</h4>
+                        <div class="select-container">
+                            <select id="wlan-type">
+                                <optgroup label="常用">
+                                    <option value="WPA-PSK2" selected="WPA-PSK2">WPA-PSK2</option>
+                                    <option value="WPA3">WPA3</option>
+                                    <option value="Open">Open(用于没有密码的WLAN)</option>
+                                </optgroup>
+                                <optgroup label="其他">
+                                    <option value="WEP">WEP</option>
+                                    <option value="WPA">WPA</option>
+                                    <option value="WPA2">WPA2</option>
+                                    <option value="WPA-PSK">WPA-PSK</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="color-input">
+                        <h4>自定义设置</h4>
+                        <p>通过调整颜色来设置QRcode颜色</p>
+                        <p>QRcode背景色<input type="color" id="colorLight" value="#FFFFFF"></input></p>
+                        <p>QRcode元素色<input type="color" id="colorDark" value="#000000"></input></p>
+                    </div>
+                    <h4>高级设置</h4>
+                    <p>调整二维码纠错等级</p>
+                    <div class="select-container">
+                        <select id="level">
+                            <option value="L">L(≈7%)</option>
+                            <option value="M" selected>M(≈15%)</option>
+                            <option value="Q">Q(≈25%)</option>
+                            <option value="H">H(≈30%)</option>
+                        </select>
+                    </div>
+                    <p>调整二维码大小</p>
+                    <div style="margin:10px 0; display:flex; align-items:center; gap:12px;">
+                        <input type="range" id="qrSize" min="100" max="300" value="200" step="10" style="width:180px; accent-color:#666;">
+                        <span id="sizeText">200×200</span>
+                    </div>
+                    <p id="tips">二维码通常位于该卡片下方，请自行滑动哦～</p>
+                    <div class="license-check" style="margin:15px 0; display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                        <input type="checkbox" id="agreeLicense">
+                        <label for="agreeLicense" style="color: #616161; cursor: pointer;">
+                            我已阅读并同意<a href="javascript:showQRcodeLicense()" style="color: #0066cc; text-decoration: underline;">开源协议</a>
+                        </label>
+                    </div>
+                    <button onclick="GenerateQRcode()">生成</button>
+                </div>
+                <div class="hide" id="qrcodeshow">
+                    <div class="card">
+                        <h2>显示QRcode</h2>
+                        <p id="LastOperation"></p>
+                        <div id="qrcode"></div>
+                        <button onclick="downloadQRcode()">下载图片</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
