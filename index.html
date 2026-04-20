@@ -243,14 +243,7 @@
                 }
             };
             function getByteLength(str) {
-                let count = 0;
-                for (let i = 0; i < str.length; i++) {
-                    const code = str.charCodeAt(i);
-                    if (code <= 127) count += 1;
-                    else if (code <= 2047) count += 2;
-                    else count += 3;
-                }
-                return count;
+                return new Blob([str]).size;
             }
             function showInput(type) {
                 const textInput = document.getElementById('textinput');
@@ -297,6 +290,9 @@
                 const Levelstr = document.getElementById('level').value;
                 let Level = LevelMap[Levelstr];
                 const sizeText = document.getElementById('sizeText').innerText;
+                const LastColorLight = document.getElementById('LastColorLight');
+                const LastColorDark = document.getElementById('LastColorDark');
+                let wlanname = '';
                 if (Level === undefined) {
                     console.warn('Invalid level:', Levelstr, 'fallback to M');
                     Level = QRCode.CorrectLevel.M;
@@ -308,37 +304,33 @@
                         return;
                     }
                     qrContent = content;
-                    LastOperation.innerText = `上次操作：\n文本或网站 → ${qrContent}\n容错等级：${Levelstr}\n大小：${sizeText}`;
                 } else if (type === 'wlan') {
                     const name = document.getElementById('wlanName').value.trim();
                     const pwd = document.getElementById('wlanPwd').value.trim() || '';
                     const encryptType = document.getElementById('wlan-type').value;
+                    wlanname = name;
                     if (name === '') {
                         alert('请输入WLAN名称！');
                         return;
-                    }     
-                    if (pwd !== '' && pwd.length < 5 && encryptType == 'WEP' ) {
-                        alert('WLAN密码不符合要求，至少大于等于5位！（对于WEP类型）');
+                    }
+                    if (pwd !== '' && encryptType == 'nopass'){
+                        alert('在使用NONE加密类型时，无法使用密码');
                         return;
                     }
-                    if (pwd !== '' && pwd.length < 8 && encryptType !== 'Open' ) {
+                    if (pwd == '' && encryptType !== 'nopass'){
+                        alert('请输入密码！');
+                        return;
+                    }
+                    if (pwd.length < 5 && encryptType == 'WEP'){
+                        alert('WLAN密码不符合要求，至少大于等于5位！（对于WEP加密类型）');
+                        return;
+                    }
+                    if ((encryptType == 'WPA' || encryptType == 'WPA2' || encryptType == 'WPA3')&& pwd.length < 8) {
                         alert('WLAN密码不符合要求，至少大于等于8位！');
                         return;
                     }
-                    if (pwd !== '' && encryptType == 'Open'){
-                        alert('WLAN密码不符合要求，至少大于等于5位！');
-                        return;
-                    }
-                    if (pwd == '' && encryptType !== 'Open'){
-                        alert('除Open外，其他加密方式密码不能留空，请切换！');
-                        return;
-                    }
-                    if (pwd !== '' && encryptType == 'Open'){
-                        alert('在使用Open加密类型时，无法使用密码');
-                        return;
-                    }
-                    qrContent = `WIFI:S:${name};T:${encryptType};P:${pwd};;`;
-                    LastOperation.innerText = `上次操作：\nWLAN → ${name}\n容错等级：${Levelstr}\n大小：${sizeText}`;
+                    qrContent = `WIFI:T:${encryptType};S:${name};P:${pwd};;`;
+                    
                 }
                 let maxBytes;
                 switch(Levelstr) {
@@ -350,7 +342,7 @@
                 }
                 const bytes = getByteLength(qrContent);
                 if (bytes > maxBytes) {
-                    alert(`当前容错【${Levelstr}】，最多支持 ${maxBytes} 字节\n当前已用：${bytes} 字节`);
+                    alert(`当前容错【${Levelstr}】，最多支持 ${maxBytes} b大小的文本\n当前已用：${bytes} b`);
                     return;
                 }
                 const qrSize = document.getElementById('qrSize').value;
@@ -364,6 +356,15 @@
                     useSVG: false,
                     useCanvas: true
                 });
+                if (type === 'text') {
+                    LastOperation.innerText = `上次操作：\n文本或网站 → ${qrContent}\n容错等级：${Levelstr}\n大小：${sizeText}\n文本字节大小：${bytes} b`;
+                } else if (type === 'wlan') {
+                    LastOperation.innerText = `上次操作：\nWLAN → ${wlanname}\n容错等级：${Levelstr}\n大小：${sizeText}\n文本字节大小：${bytes} b`;
+                }
+                LastColorLight.innerText = `上一次的背景色：${colorLight}`;
+                LastColorLight.style.color = `${colorLight}`;
+                LastColorDark.innerText = `上一次的元素色：${colorDark}`;
+                LastColorDark.style.color = `${colorDark}`;
                 showQRcodeContainer();
             };
             function showQRcodeContainer() {
@@ -381,10 +382,10 @@
                 a.click();
             };
             function about() {
-                alert('QRcodeX\n版本：26.2.1\n开源协议(MIT)\nCopyright (c) 2026 QRcodeX\n\n第三方依赖\n• qrcodejs (MIT) | Copyright (c) 2018 davidshimjs\n\n字体资源\n• HarmonyOS Sans | Copyright (c) 华为终端有限公司\n  遵循《HarmonyOS Sans 字体免费商用授权协议》');
+                alert('QRcodeX\n版本：26.2.3\n开源协议(MIT)\nCopyright (c) 2026 QRcodeX\n\n第三方依赖\n• qrcodejs (MIT) | Copyright (c) 2018 davidshimjs\n\n字体资源\n• HarmonyOS Sans | Copyright (c) 华为终端有限公司\n  遵循《HarmonyOS Sans 字体免费商用授权协议》');
             };
             function changelog() {
-                alert('更新日志\n\n-26.2.1:修复了一些隐性，但十分致命的问题，修复了部分DOM元素获取时机错误导致的功能失效问题，增加了大小调整，范围在100至300，将图片改为Canvas格式，电脑下载更高清，手机端嘛，还是一样截屏（今天喝了奶茶，太好喝了😋）\n\n-26.2：大面积修复代码，新增了跟随系统的深色模式，并增加了一点点小彩蛋（对了，还有个人主页跳转链接还没说呢，今天也是下载到了Android Studio，后面将会用这玩意来进行打包，可能会出现签名不一致的情况）\n\n-26.1：更名为“QRcodeX”，已完成第二次重置\n\n（第二次重置）\n\26.0 snapshot-2:\n修复了无法生成二维码的bug（其实是我忘记用网络权限了）\n-26.0 snapshot-1:\n项目重置后的第一个版本，更换了版本命名规则（第一次重置的项目）\n\n（第一次重置）\n\n-1.1.2：\n1，修复了生成网络二维码取消后出现UI冲突的现象\n2，修改了软件图标\n3，主页图片更为曼波\n4，有彩蛋\n\n-1.1.1：增加了生成二维码后的退出按钮\n\n-1.1.1：更新了网络二维码生成，二维码自定义选项\n\n-1.0.0：二维码生成器诞生了，体积小巧无广告（虽然包体有10MB）');
+                alert('更新日志\n\n-26.2.3：上次操作更新了颜色，不知道怎么回事，二维码生成是不稳定的🤔，出现不稳定的情况，就只能刷新解决了😅\n\n-26.2.2：修复WLANQRcode生成的问题，累死我力😭\n\n-26.2.1:修复了一些隐性，但十分致命的问题，修复了部分DOM元素获取时机错误导致的功能失效问题，增加了大小调整，范围在100至300，将图片改为Canvas格式，电脑下载更高清，手机端嘛，还是一样截屏（今天喝了奶茶，太好喝了😋）\n\n-26.2：大面积修复代码，新增了跟随系统的深色模式，并增加了一点点小彩蛋（对了，还有个人主页跳转链接还没说呢，今天也是下载到了Android Studio，后面将会用这玩意来进行打包，可能会出现签名不一致的情况）\n\n-26.1：更名为“QRcodeX”，已完成第二次重置\n\n（第二次重置）\n\26.0 snapshot-2:\n修复了无法生成二维码的bug（其实是我忘记用网络权限了）\n-26.0 snapshot-1:\n项目重置后的第一个版本，更换了版本命名规则（第一次重置的项目）\n\n（第一次重置）\n\n-1.1.2：\n1，修复了生成网络二维码取消后出现UI冲突的现象\n2，修改了软件图标\n3，主页图片更为曼波\n4，有彩蛋\n\n-1.1.1：增加了生成二维码后的退出按钮\n\n-1.1.1：更新了网络二维码生成，二维码自定义选项\n\n-1.0.0：二维码生成器诞生了，体积小巧无广告（虽然包体有10MB）');
             };
             function emoticon_change(emoticon,text,beforetext){
                 if(emoticon.innerText === beforetext){
@@ -417,7 +418,7 @@
     <body>
         <div class="container" id="container">
             <header>
-                <span id="headerText" onclick="emoticon_change(this,'(=ﾟДﾟ=)','QRcodeX')" style="cursor:pointer;color:#000000;font-size: clamp(18px, 5vw, 24px);">QRcodeX</span>
+                <h2 id="headerText" onclick="emoticon_change(this,'(=ﾟДﾟ=)','QRcodeX')" style="cursor:pointer;color;font-size: clamp(18px, 5vw, 24px);">QRcodeX</h2>
                 <div class="header-right-group">
                     <span onclick="about()" style="font-size:15px; cursor:pointer;">i</span>
                     <span onclick="changelog()" style="font-size:15px; cursor:pointer;">≡</span>
@@ -464,15 +465,13 @@
                         <div class="select-container">
                             <select id="wlan-type">
                                 <optgroup label="常用">
-                                    <option value="WPA-PSK2" selected="WPA-PSK2">WPA-PSK2</option>
+                                    <option value="WPA2" selected="WPA2">WPA2/WPA-PSK2（默认）</option>
                                     <option value="WPA3">WPA3</option>
-                                    <option value="Open">Open(用于没有密码的WLAN)</option>
+                                    <option value="nopass">nopass(用于没有密码的WLAN)</option>
                                 </optgroup>
                                 <optgroup label="其他">
                                     <option value="WEP">WEP</option>
-                                    <option value="WPA">WPA</option>
-                                    <option value="WPA2">WPA2</option>
-                                    <option value="WPA-PSK">WPA-PSK</option>
+                                    <option value="WPA">WPA/WPA-PSK</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -511,6 +510,8 @@
                     <div class="card">
                         <h2>显示QRcode</h2>
                         <p id="LastOperation"></p>
+                        <p id="LastColorLight">上一次的背景色：#FFFFFF</p>
+                        <p id="LastColorDark">上一次的元素色：#000000</p>
                         <div id="qrcode"></div>
                         <button onclick="downloadQRcode()">下载图片</button>
                     </div>
